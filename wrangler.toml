@@ -1,0 +1,7 @@
+name = "night-shift-handover"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Fully deterministic pipeline — no model, no secrets, no bindings required.
+# Deploy is the whole story:  npx wrangler deploy
