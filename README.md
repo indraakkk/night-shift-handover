@@ -1,7 +1,3 @@
-# Vouch Builder Take-Home
-
-Welcome — thanks for taking the time.
-
 ## Live demo (deployed URL + sample curl)
 
 Deployed on Cloudflare Workers at **`https://night-shift-handover.tothemoondigital.workers.dev`**.
@@ -44,14 +40,3 @@ To retarget the morning here, edit the `"morningOf"` field inside the JSON body
 
 > The handover routes are **POST-only**; a `GET` returns 404. See [`DECISIONS.md`](DECISIONS.md)
 > for the design rationale and [`CLAUDE.md`](CLAUDE.md) for the engine/agent rules.
-
-## About this repo
-
-**Start here:** read [`BRIEF.md`](BRIEF.md). It describes the task, what to build,
-and how to submit.
-
-Your sample data is in [`data/`](data/):
-- `events.json` — structured front-desk events
-- `night-logs.md` — one night logged as free text
-
-Timebox is ~2 hours. We're looking for sharp tradeoffs, not completeness. Good luck.
