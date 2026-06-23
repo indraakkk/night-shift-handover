@@ -52,8 +52,8 @@ No API key, no secret, no binding — the pipeline is fully deterministic, so de
 
 - **Tests (engine, no network/runtime):** `npx tsx test/run.ts` — pure assertions on the sample week for morning `2026-05-30`, plus unseen-text robustness cases. Must print `ALL PASSED`.
 - **Typecheck:** `npm run typecheck` (`tsc --noEmit`).
-- **Dev:** `npx wrangler dev`, then e.g. `curl -s localhost:8787/handover/sample | jq` (add `?morningOf=YYYY-MM-DD` to retarget).
-- **Deploy:** `npx wrangler deploy` (one-time `npx wrangler login` first). Publishes to `<name>.<subdomain>.workers.dev`. Real input arrives as data, not a hand-edited file: `curl -s -X POST .../handover -H 'content-type: application/json' --data @payload.example.json | jq`, where the body is `{ hotel, events, nightLogs?, morningOf? }`.
+- **Dev:** `npx wrangler dev`, then e.g. `curl -s -X POST localhost:8787/handover/sample | jq` (handover routes are **POST-only** — a GET returns 404; add `?morningOf=YYYY-MM-DD` to retarget).
+- **Deploy:** `npx wrangler deploy` (one-time `npx wrangler login` first). Publishes to `<name>.<subdomain>.workers.dev` — **currently live at `https://night-shift-handover.tothemoondigital.workers.dev`**. Quickest check, no body and no local file: `curl -s -X POST https://night-shift-handover.tothemoondigital.workers.dev/handover/sample | jq`. Real input arrives as data, not a hand-edited file — run from the repo root so the relative path resolves: `curl -s -X POST https://night-shift-handover.tothemoondigital.workers.dev/handover -H 'content-type: application/json' --data @payload.example.json | jq`, where the body is `{ hotel, events, nightLogs?, morningOf? }`.
 
 ## Rules for extending heuristics safely
 
