@@ -28,7 +28,11 @@ function defaultMorning(events: { timestamp: string }[]): string {
 
 function build(req: HandoverRequest, generatedAt: string): Handover {
   const morningOf = req.morningOf || defaultMorning(req.events ?? []);
-  const log = makeLogger({ requestId: requestId(), hotel: req.hotel?.id ?? "unknown", morningOf });
+  const log = makeLogger({
+    requestId: requestId(),
+    hotel: req.hotel?.id ?? "unknown",
+    morningOf,
+  });
 
   log.info("ingest", "received request", {
     events: req.events?.length ?? 0,
@@ -36,7 +40,10 @@ function build(req: HandoverRequest, generatedAt: string): Handover {
   });
 
   const src = normalize(req.events ?? [], req.nightLogs);
-  log.info("normalize", "built source registry", { sources: src.registry.size, segments: src.segments.length });
+  log.info("normalize", "built source registry", {
+    sources: src.registry.size,
+    segments: src.segments.length,
+  });
 
   const observations = classify(src);
   log.info("classify", "classified sources", {
@@ -45,7 +52,10 @@ function build(req: HandoverRequest, generatedAt: string): Handover {
   });
 
   const engine = reconcile(observations, morningOf);
-  log.info("reconcile", "threaded into items", { items: engine.items.length, flags: engine.flags.length });
+  log.info("reconcile", "threaded into items", {
+    items: engine.items.length,
+    flags: engine.flags.length,
+  });
 
   const grounded = ground(engine, src, log);
   return { hotel: req.hotel, morningOf, generatedAt, ...grounded };
@@ -53,19 +63,23 @@ function build(req: HandoverRequest, generatedAt: string): Handover {
 
 app.get("/", (c) =>
   c.json({
-    service: "vouch-night-handover",
+    service: "night-shift-handover",
     deterministic: true,
     usage: {
-      generate: "POST /handover  body: { hotel, events, nightLogs?, morningOf? }",
+      generate:
+        "POST /handover  body: { hotel, events, nightLogs?, morningOf? }",
       demo: "POST /handover/sample  (uses the bundled sample week; ?morningOf=YYYY-MM-DD optional)",
     },
-  })
+  }),
 );
 
 app.post("/handover", async (c) => {
   const body = (await c.req.json().catch(() => null)) as HandoverRequest | null;
   if (!body?.events || !Array.isArray(body.events)) {
-    return c.json({ error: "body must include events: StructuredEvent[]" }, 400);
+    return c.json(
+      { error: "body must include events: StructuredEvent[]" },
+      400,
+    );
   }
   return c.json(build(body, new Date().toISOString()));
 });

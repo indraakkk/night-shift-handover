@@ -24,19 +24,21 @@ POST /handover  { hotel, events, nightLogs?, morningOf? }
       JSON         { items[], flags[], rejected[], hotel, morningOf, generatedAt }
 ```
 
-**Why this answers the brief:** grounding is enforced in *code*, not model goodwill. The
+**Why this answers the brief:** grounding is enforced in _code_, not model goodwill. The
 LLM is gone, so "stop it inventing facts" becomes "the code can only ever echo source
 fields." Injection (evt_0026) is inert because nothing in the pipeline executes text.
 
 ## Deliberate skips (documented in DECISIONS.md)
+
 - **Multilingual punt:** non-Latin free-text (e.g. the Chinese 312 no-show charge, 208
-  safe-box) is *not* interpreted — surfaced verbatim and flagged for human review. The
+  safe-box) is _not_ interpreted — surfaced verbatim and flagged for human review. The
   honest cost: we lose that the 312 charge was applied (so we flag the resulting
   contradiction with evt_0012) and lose the 208 urgency. This is the deterministic
   tradeoff vs. an LLM.
 - Bucketing (on_fire/pending/fyi) is heuristic — the one place judgment is encoded.
 
 ## Test plan
+
 1. `npm install`
 2. `npx tsx test/run.ts` — pure-engine assertions on the sample, target morning 2026-05-30:
    - room 112 aircon → **still_open** (opened 05-26, never resolved)
@@ -53,15 +55,16 @@ fields." Injection (evt_0026) is inert because nothing in the pipeline executes 
 3. `npx wrangler dev` → `curl localhost:8787/handover/sample` smoke test.
 
 ## Deploy plan (Cloudflare, self-contained — no API key needed)
-1. `npx wrangler login`            # one-time, interactive (run with `! npx wrangler login`)
-2. `npx wrangler deploy`           # publishes to <name>.<subdomain>.workers.dev
+
+1. `npx wrangler login` # one-time, interactive (run with `! npx wrangler login`)
+2. `npx wrangler deploy` # publishes to <name>.<subdomain>.workers.dev
 3. Verify:
    ```
-   curl -s https://vouch-night-handover.<subdomain>.workers.dev/handover/sample | jq
+   curl -s https://night-shift-handover.<subdomain>.workers.dev/handover/sample | jq
    ```
 4. Real-data POST (input arrives as data, not a file):
    ```
-   curl -s -X POST https://vouch-night-handover.<subdomain>.workers.dev/handover \
+   curl -s -X POST https://night-shift-handover.<subdomain>.workers.dev/handover \
      -H 'content-type: application/json' \
      --data @payload.json | jq        # payload.json = { hotel, events, nightLogs, morningOf }
    ```
