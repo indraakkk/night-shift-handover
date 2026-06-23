@@ -41,12 +41,13 @@ const OPEN_CUES = /\b(still|not fixed|out of order|not settled|never|please chas
 const UNCERTAIN_CUES = /\b(assume|probably|i think|maybe|not sure|never came back)\b/i;
 
 // Anything that reads as an instruction TO the system is content to flag, never obey.
-const INSTRUCTION_CUES = /\b(ignore (all|other|previous|the)|system note|disregard|override|mark .* approved|report .* all clear|add .* (credit|goodwill))\b/i;
+// Broadened to survive conjugations/gerunds and paraphrase, since logs are free-form.
+const INSTRUCTION_CUES =
+  /\b(ignor(e|es|ing|ed)|disregard(s|ing|ed)?|overrid(e|es|ing|den)|system note|mark(s|ing|ed)? .{0,30}approved|report(s|ing|ed)? (the night|all|every|everything|each) .{0,30}(as )?(all )?(clear|resolved|complete)|add(s|ing|ed)? .{0,30}(credit|goodwill))\b/i;
 
 // A proposed action that has not been verified/approved — flag, don't rubber-stamp.
 const NEEDS_VERIFY_CUES = /no photos|no manager approval|could not verify|needs investigation|unverified|morning team to confirm/i;
 
-// On-fire = safety, hard deadline, guest blocked, or money about to walk out the door.
 // On-fire = safety, hard deadline, guest blocked, or money about to walk out the door.
 // (A handled medical note that self-reports "declined ambulance / okay" is NOT on fire.)
 const ONFIRE_CUES = /\b(leak|deadline|48[ -]?hour|blocked|never collected|checks? out|checkout tomorrow|emergency|safe ?box|immigration|passport)\b/i;
@@ -67,14 +68,27 @@ function bucketFor(status: ObsStatus, text: string): Bucket {
   return "fyi";
 }
 
-/** Extract a plausible room number (108-399), ignoring money like "SGD 100/500". */
+const ROOM_RANGE = (n: number) => n >= 108 && n <= 399;
+// Words that, if they follow a 3-digit number, mean it's a quantity/amount, not a room.
+const UNIT_AFTER = /^\s*(towels?|dollars?|sgd|usd|guests?|people|pax|minutes?|mins?|nights?|days?|ml|kg|%|emails?|calls?)\b/i;
+
+/**
+ * Extract a room number conservatively. An explicit marker (room/rm/#/房) wins; otherwise
+ * a standalone 3-digit token in 108-399 that is NOT money (SGD/$) and NOT a quantity unit.
+ * Deliberately narrow: on unseen text we would rather miss a room than invent one.
+ */
 function extractRoom(text: string): string | null {
-  const re = /(SGD\s*|\$\s*)?\b(\d{3})\b/g;
+  const marked = /(?:room|rm|#|房)\s*#?\s*(\d{3})/i.exec(text);
+  if (marked && ROOM_RANGE(parseInt(marked[1], 10))) return marked[1];
+
+  const re = /(\d{3})/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) {
-    if (m[1]) continue; // preceded by a currency marker → it's money, not a room
-    const n = parseInt(m[2], 10);
-    if (n >= 108 && n <= 399) return m[2];
+    const before = text.slice(Math.max(0, m.index - 5), m.index);
+    if (/(SGD|\$)\s*$/i.test(before)) continue; // money
+    const after = text.slice(m.index + 3);
+    if (UNIT_AFTER.test(after)) continue; // quantity, not a room
+    if (ROOM_RANGE(parseInt(m[1], 10))) return m[1];
   }
   return null;
 }
@@ -127,7 +141,8 @@ function classifySegment(
       text,
       confidence: "low",
       flag: "incomplete",
-      flagDetail: "Free-text entry not in English — surfaced verbatim for human review (not auto-interpreted).",
+      // Carry the actual text — "surfaced verbatim" must mean the operator can SEE it.
+      flagDetail: `Free-text entry not in English — surfaced verbatim for human review (not auto-interpreted): «${text}»`,
     };
   }
 
@@ -154,8 +169,9 @@ function classifySegment(
     obs.bucket = "fyi";
   } else if (UNCERTAIN_CUES.test(text)) {
     obs.flag = "incomplete";
-    obs.flagDetail = `Free-text ${id} is self-reported as uncertain ("assume/probably") — not asserted as resolved.`;
+    obs.flagDetail = `Free-text ${id} is self-reported as uncertain — not asserted: «${text.slice(0, 160)}»`;
     obs.status = "pending";
+    obs.confidence = "low"; // never let an uncertain claim become an operational action item
   } else if (!room) {
     obs.flag = "incomplete";
     obs.flagDetail = `Free-text ${id} could not be tied to a specific room — surfaced for human review.`;
