@@ -52,21 +52,21 @@ fields." Injection (evt_0026) is inert because nothing in the pipeline executes 
      itself sits in a punted Chinese entry → needs_review flag references it)
    - 208 safe-box & wifi-unknown-room → **needs_review/incomplete** flags, no invented room
    - every item/flag `sources[]` resolves to a real id (ground gate); `rejected` is empty
-3. `npx wrangler dev` → `curl localhost:8787/handover/sample` smoke test.
+3. `npx wrangler dev` → `curl -s -X POST localhost:8787/handover/sample | jq` smoke test (handover routes are POST-only).
 
 ## Deploy plan (Cloudflare, self-contained — no API key needed)
 
 1. `npx wrangler login` # one-time, interactive (run with `! npx wrangler login`)
 2. `npx wrangler deploy` # publishes to <name>.<subdomain>.workers.dev
-3. Verify:
+3. Verify — no body, no local file (uses the bundled sample week; add `?morningOf=YYYY-MM-DD` to retarget):
    ```
-   curl -s https://night-shift-handover.<subdomain>.workers.dev/handover/sample | jq
+   curl -s -X POST https://night-shift-handover.tothemoondigital.workers.dev/handover/sample | jq
    ```
-4. Real-data POST (input arrives as data, not a file):
+4. Real-data POST (input arrives as data; run from the repo root so the relative `@` path resolves):
    ```
-   curl -s -X POST https://night-shift-handover.<subdomain>.workers.dev/handover \
+   curl -s -X POST https://night-shift-handover.tothemoondigital.workers.dev/handover \
      -H 'content-type: application/json' \
-     --data @payload.json | jq        # payload.json = { hotel, events, nightLogs, morningOf }
+     --data @payload.example.json | jq   # body = { hotel, events, nightLogs?, morningOf }
    ```
 
 Because there is no model, deploy needs no secret — `wrangler deploy` is the whole story.
