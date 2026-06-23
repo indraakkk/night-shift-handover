@@ -24,6 +24,17 @@ curl -s -X POST https://night-shift-handover.tothemoondigital.workers.dev/handov
   --data @payload.example.json | jq
 ```
 
+The trailing `| jq` is optional — it only pretty-prints the JSON and needs the separate
+[`jq`](https://jqlang.github.io/jq/) tool. If you don't have it, just drop it (you get raw
+JSON), or use what's already on most machines:
+
+```bash
+# raw JSON, no extra tools
+curl -s -X POST https://night-shift-handover.tothemoondigital.workers.dev/handover/sample
+# pretty-print without jq
+curl -s -X POST https://night-shift-handover.tothemoondigital.workers.dev/handover/sample | python3 -m json.tool
+```
+
 > The handover routes are **POST-only**; a `GET` returns 404. See [`DECISIONS.md`](DECISIONS.md)
 > for the design rationale and [`CLAUDE.md`](CLAUDE.md) for the engine/agent rules.
 
